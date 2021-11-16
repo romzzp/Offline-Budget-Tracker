@@ -23,3 +23,30 @@ function saveRecord(record) {
     const BudgetStore = transaction.objectStore("BudgetStore");
     BudgetStore.add(record);
 }
+//function to check database
+function checkDatabase() {
+    const transaction = db.transaction(["BudgetStore"], "readwrite");
+    const pending = transaction.objectStore("BudgetStore");
+    const getAll = pending.getAll();
+
+    getAll.onsuccess = function () {
+        if (getAll.result.length > 0) {
+            fetch("/api/transaction/bulk", {
+                method: "POST",
+                body: JSON.stringify(getAll.result),
+                headers: {
+                    Accept: "application/json, text/plain, */*",
+                    "Content-Type": "application/json"
+                }
+            })
+                .then(response => response.json())
+                .then(() => {
+                    const transaction = db.transaction(["BudgetStore"], "readwrite");
+                    const store = transaction.objectStore("BudgetStore");
+                    store.clear();
+                });
+        }
+    };
+}
+
+window.addEventListener("online", checkDatabase);
